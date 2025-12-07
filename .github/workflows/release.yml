@@ -1,0 +1,37 @@
+name: Create Release
+
+on:
+  push:
+    paths:
+      - 'V*/MotroLinkManager_Setup.exe'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from path
+        id: version
+        run: |
+          # Find the exe file that was pushed
+          FILE_PATH=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep 'MotroLinkManager_Setup.exe' | head -1)
+          echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
+
+          # Extract version (folder name)
+          VERSION=$(echo "$FILE_PATH" | cut -d'/' -f1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          files: ${{ steps.version.outputs.file_path }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
