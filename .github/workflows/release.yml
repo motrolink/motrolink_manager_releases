@@ -14,24 +14,54 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Get version from path
         id: version
         run: |
-          # Find the exe file that was pushed
-          FILE_PATH=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep 'MotroLinkManager_Setup.exe' | head -1)
+          # Find the exe file in the repository
+          FILE_PATH=$(find . -path './V*/MotroLinkManager_Setup.exe' -type f | head -1 | sed 's|^\./||')
+          echo "Found file: $FILE_PATH"
+
+          if [ -z "$FILE_PATH" ]; then
+            echo "Error: No MotroLinkManager_Setup.exe found"
+            exit 1
+          fi
+
           echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
 
           # Extract version (folder name)
           VERSION=$(echo "$FILE_PATH" | cut -d'/' -f1)
+          echo "Detected version: $VERSION"
+
+          if [ -z "$VERSION" ]; then
+            echo "Error: Could not extract version"
+            exit 1
+          fi
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Debug outputs
+        run: |
+          echo "Version: ${{ steps.version.outputs.version }}"
+          echo "File path: ${{ steps.version.outputs.file_path }}"
 
       - name: Create and push tag
         run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Check if tag already exists
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, deleting..."
+            git push origin --delete "$VERSION" || true
+            git tag -d "$VERSION" || true
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.version.outputs.version }}
-          git push origin ${{ steps.version.outputs.version }}
+          git tag "$VERSION"
+          git push origin "$VERSION"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
