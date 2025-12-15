@@ -3,7 +3,7 @@ name: Create Release
 on:
   push:
     paths:
-      - 'V*/MotroLinkManager_Setup.exe'
+      - 'V*/MotroLink_Manager_Setup.exe'
 
 jobs:
   release:
@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          lfs: true
 
       - name: Get version from path
         id: version
