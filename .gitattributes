@@ -1,0 +1,2 @@
+*.zip filter=lfs diff=lfs merge=lfs -text
+V2.1/MotroLink_Manager_Setup.exe filter=lfs diff=lfs merge=lfs -text
